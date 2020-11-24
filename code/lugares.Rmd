@@ -69,7 +69,26 @@ map <- tm_basemap(leaflet::providers$Esri.WorldImagery, group = "Imagen Satelita
 
               legend.show = F,
 
-              group = "Zonas",
+              group = "Mall",
+
+              popup.vars = c("Nombre", "tipo", "Area")
+
+              ) +
+
+  tm_shape(hosp_pgn) +
+
+  tm_polygons(alpha = 0.4, 
+              col = "tipo",
+              lwd = 2, 
+              palette = c("#b30000", "#00802b"),
+
+              border.col = "#1affff",
+
+              border.alpha = 0.5,
+
+              legend.show = F,
+
+              group = "Hospitales",
 
               popup.vars = c("Nombre", "tipo", "Area")
 
