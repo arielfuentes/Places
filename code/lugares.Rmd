@@ -1,5 +1,5 @@
 ---
-title: "Lugares"
+title:  <center> `r paste("Lugares", x, sep = " ")` </center>
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: 
   html_document:
@@ -12,6 +12,9 @@ knitr::opts_chunk$set(echo = TRUE)
 library(DiagrammeR)
 library(tmap)
 library(leaflet)
+library(sf)
+library(osmdata)
+library(dplyr)
 ```
 
 ```{r, echo=FALSE}
@@ -20,48 +23,34 @@ htmltools::img(src = knitr::image_uri(file.path("../data/logo/logoTransdev.jpg")
                style = 'position:absolute; top:0; right:0; padding:10px; width: 110px')
 ```
 
-En este reporte se muestra el procedimiento para obtener los lugares importantes que deben ser servidos por el Transporte Público. Este proceso es aplicado a Santiago.
+Este reporte entrega el procedimiento para obtener los lugares de atractividad importantes que deben ser servidos por el Transporte Público. 
 
 ## 1. Adquisición de Datos
 
-* Se lee el *shape de comunas y zonas* del Transporte Público para obtener la región de Estudio, este archivo está disponible en el sitio web del [DTPM](http://www.dtpm.cl/index.php/noticias/pov2)
-* Se adquieren datos desde [Open Street Map](https://wiki.openstreetmap.org/wiki/Main_Page) 
-* Se obtiene la red de buses de la Unidad 6
+* Se obtiene el *shape de regiones* obtenido de la biblioteca del [Congreso](https://www.bcn.cl/siit/mapas_vectoriales)
 
-## 2. Metodología
+* Se adquieren datos de lugares de interés mediante una consulta a [Open Street Map](https://wiki.openstreetmap.org/wiki/Main_Page) 
 
-El desarrollo Metodológico consiste en:
+En esta fase se obtuvieron los lugares de compra: *Mall y Shopping Center* 
 
-````{r, message=FALSE, warning = F, echo=FALSE, fig.align='center'}
-grViz("
-      digraph boxes_and_circles {
-      
-      #node statement
-      node [shape = box
-            fontname = Helvetica
-            penwidth = 2.0
-            style = filled
-            fillcolor = lightblue]
-      Lugares; Red; Sectorización; Poligonización
-      node [shape = circle
-            fontname = Helvetica
-            penwidth = 2.0
-            style = filled
-            fillcolor = orange]
-      'Áreas de Elección'
-      
-      #edge statement
-      edge []
-      Lugares->Sectorización; 
-      Red->Poligonización [label = 'geoproceso'
-                           fontname = Helvetica
-                           fontsize = 12]; 
-      Sectorización->'Áreas de Elección'; 
-      Poligonización->'Áreas de Elección'
-      } ")
-````
-
-## 3. Visualización de Lugares
+````{r, message=FALSE, warning = F, echo=FALSE, results = 'hide'}
+#Zona to work with
+zonas <- st_read("../data/Regional.shp") %>%
+  st_transform(4326) %>%
+  filter(Region == x)
+#place
+mall <- opq(bbox = st_bbox(zonas)) %>%
+  add_osm_feature(key = "shop", value = c("mall", "shopping_centre")) %>%
+  osmdata_sf()
+mall_pgn <- mall$osm_polygons %>%
+  select(Nombre = name, tipo = shop) %>%
+  mutate(Nombre = iconv(Nombre, from = "UTF-8", to = "UTF-8")) %>%
+  filter(!is.na(tipo)) %>%
+  mutate(Area = st_area(.)) %>%
+  select(tipo, Nombre, Area)
+rm(mall)
+```
+## 2. Visualización de Lugares
 
 ````{r, message=FALSE, warning = F, echo=FALSE, fig.align='center', out.width = '100%'}
 
@@ -70,10 +59,11 @@ map <- tm_basemap(leaflet::providers$Esri.WorldImagery, group = "Imagen Satelita
   tm_shape(mall_pgn) +
 
   tm_polygons(alpha = 0.4, 
-              col = "#ff0000",
-              lwd = 4,
+              col = "tipo",
+              lwd = 2, 
+              palette = c("#b30000", "#00802b"),
 
-              border.col = "lightblue",
+              border.col = "yellow",
 
               border.alpha = 0.5,
 
@@ -81,16 +71,9 @@ map <- tm_basemap(leaflet::providers$Esri.WorldImagery, group = "Imagen Satelita
 
               group = "Zonas",
 
-              popup.vars = c("Nombre", "tipo")
+              popup.vars = c("Nombre", "tipo", "Area")
 
-              ) +
-  tm_shape(mall_pt) +
-  tm_dots()
-
+              ) 
 
 tmap_leaflet(map) 
-
 ````
-## 3. Modelación de Patrones Puntuales 
-
-## 3. Resultados
