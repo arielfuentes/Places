@@ -49,6 +49,16 @@ mall_pgn <- mall$osm_polygons %>%
   mutate(Area = st_area(.)) %>%
   select(tipo, Nombre, Area)
 rm(mall)
+hosp <- opq(bbox = st_bbox(zonas)) %>%
+  add_osm_feature(key = "amenity", value = c("hospital", "clinic")) %>%
+  osmdata_sf()
+hosp_pgn <- hosp$osm_polygons %>%
+  select(Nombre = name, tipo = amenity) %>%
+  mutate(Nombre = iconv(Nombre, from = "UTF-8", to = "UTF-8")) %>%
+  filter(!is.na(tipo)) %>%
+  mutate(Area = st_area(.)) %>%
+  select(tipo, Nombre, Area)
+rm(hosp)
 ```
 ## 2. Visualización de Lugares
 
